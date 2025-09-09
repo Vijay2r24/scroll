@@ -12,6 +12,7 @@ import {
   exportAsHtml,
   exportAsPdf,
 } from "./utils/exportUtils";
+import UnifiedScrollBar from "./components/MiniMap";
 
 function App() {
   const [leftDocument, setLeftDocument] = useState(null);
@@ -40,22 +41,27 @@ function App() {
     if (leftDocument && rightDocument) {
       console.log("Both documents exist, starting comparison...");
       setIsComparing(true);
-      
+
       // Use async comparison to prevent browser blocking
       compareHtmlDocuments(
         leftDocument.originalHtmlContent,
         rightDocument.originalHtmlContent
-      ).then(result => {
-        console.log("Comparison result summary:", result);
-        setComparison(result);
-        setViewMode("comparison");
-        console.log("Comparison completed, view mode set to comparison");
-      }).catch(error => {
-        console.error("Comparison failed:", error);
-        alert("Failed to compare documents. Please try again with smaller files or contact support.");
-      }).finally(() => {
-        setIsComparing(false);
-      });
+      )
+        .then((result) => {
+          console.log("Comparison result summary:", result);
+          setComparison(result);
+          setViewMode("comparison");
+          console.log("Comparison completed, view mode set to comparison");
+        })
+        .catch((error) => {
+          console.error("Comparison failed:", error);
+          alert(
+            "Failed to compare documents. Please try again with smaller files or contact support."
+          );
+        })
+        .finally(() => {
+          setIsComparing(false);
+        });
     } else {
       console.log("Cannot compare - missing documents");
     }
@@ -155,7 +161,7 @@ function App() {
                   Comparing...
                 </>
               ) : (
-                'Compare Documents'
+                "Compare Documents"
               )}
             </button>
             <button
@@ -178,17 +184,19 @@ function App() {
             />
 
             {/* Document Comparison View */}
-            <div className="grid grid-cols-[1fr_80px_1fr] gap-4 items-stretch">
+            <div className="grid grid-cols-[1fr_30px_1fr] gap-4 h-[80vh]">
               <DocumentPreview
                 document={leftDocument}
                 diffs={comparison.leftDiffs}
                 title="Original Document"
                 containerId="left-preview-container"
               />
-              <UnifiedMiniMap
+
+              <UnifiedScrollBar
                 leftContainerId="left-preview-container"
                 rightContainerId="right-preview-container"
               />
+
               <DocumentPreview
                 document={rightDocument}
                 diffs={comparison.rightDiffs}
@@ -206,7 +214,9 @@ function App() {
               </h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                 <div className="space-y-3">
-                  <h5 className="font-medium text-gray-700">Content Changes (Both Documents)</h5>
+                  <h5 className="font-medium text-gray-700">
+                    Content Changes (Both Documents)
+                  </h5>
                   <div className="flex items-center gap-2">
                     <span className="bg-green-200 text-green-800 px-2 py-1 rounded">
                       Added text
@@ -268,8 +278,9 @@ function App() {
                   <span className="font-medium">💡 Mutual Comparison:</span>
                 </div>
                 <div className="mt-1 text-sm text-indigo-600">
-                  Both documents show all changes with placeholders maintaining layout structure. 
-                  This ensures you can see exactly what was added, removed, or modified in context.
+                  Both documents show all changes with placeholders maintaining
+                  layout structure. This ensures you can see exactly what was
+                  added, removed, or modified in context.
                 </div>
               </div>
             </div>
