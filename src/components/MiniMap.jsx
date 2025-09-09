@@ -14,6 +14,7 @@ const UnifiedScrollBar = ({ leftContainerId, rightContainerId }) => {
   const barRef = useRef(null);
   const [markers, setMarkers] = useState([]);
   const [viewport, setViewport] = useState({ top: 0, height: 0 });
+  const [isDragging, setIsDragging] = useState(false);
  
   const getContainers = useCallback(
     () => ({
@@ -22,6 +23,56 @@ const UnifiedScrollBar = ({ leftContainerId, rightContainerId }) => {
     }),
     [leftContainerId, rightContainerId]
   );
+  /** Scroll both containers to a specific ratio */
+  const scrollBothToRatio = useCallback((ratio) => {
+    const { left, right } = getContainers();
+    if (!left || !right) return;
+
+    const leftMaxScroll = Math.max(1, left.scrollHeight - left.clientHeight);
+    const rightMaxScroll = Math.max(1, right.scrollHeight - right.clientHeight);
+
+    const leftScrollTop = Math.round(leftMaxScroll * ratio);
+    const rightScrollTop = Math.round(rightMaxScroll * ratio);
+
+    left.scrollTop = leftScrollTop;
+    right.scrollTop = rightScrollTop;
+  }, [getContainers]);
+
+  /** Handle click on scroll bar */
+  const handleBarClick = useCallback((e) => {
+    if (!barRef.current) return;
+    
+    const rect = barRef.current.getBoundingClientRect();
+    const clickY = e.clientY - rect.top;
+    const ratio = Math.max(0, Math.min(1, clickY / rect.height));
+    
+    scrollBothToRatio(ratio);
+  }, [scrollBothToRatio]);
+
+  /** Handle drag on scroll bar */
+  const handleMouseDown = useCallback((e) => {
+    e.preventDefault();
+    setIsDragging(true);
+    
+    const handleMouseMove = (e) => {
+      if (!barRef.current) return;
+      
+      const rect = barRef.current.getBoundingClientRect();
+      const dragY = e.clientY - rect.top;
+      const ratio = Math.max(0, Math.min(1, dragY / rect.height));
+      
+      scrollBothToRatio(ratio);
+    };
+    
+    const handleMouseUp = () => {
+      setIsDragging(false);
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+    
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+  }, [scrollBothToRatio]);
  
   /** Collect all change markers */
   const collectMarkers = useCallback(() => {
@@ -110,8 +161,8 @@ const UnifiedScrollBar = ({ leftContainerId, rightContainerId }) => {
  
     refresh();
  
+    // Only listen to left container for viewport updates to avoid conflicts
     left.addEventListener('scroll', updateViewport, { passive: true });
-    right.addEventListener('scroll', updateViewport, { passive: true });
  
     const observer = new MutationObserver(refresh);
     observer.observe(left, { childList: true, subtree: true });
@@ -121,7 +172,6 @@ const UnifiedScrollBar = ({ leftContainerId, rightContainerId }) => {
  
     return () => {
       left.removeEventListener('scroll', updateViewport);
-      right.removeEventListener('scroll', updateViewport);
       observer.disconnect();
       window.removeEventListener('resize', refresh);
     };
@@ -130,14 +180,18 @@ const UnifiedScrollBar = ({ leftContainerId, rightContainerId }) => {
   return (
     <div
       ref={barRef}
-      className="relative w-6 h-full bg-gray-100 rounded-md cursor-pointer"
+      className={`relative w-6 h-full bg-gray-100 rounded-md cursor-pointer select-none ${
+        isDragging ? 'cursor-grabbing' : 'cursor-grab'
+      }`}
+      onClick={handleBarClick}
+      onMouseDown={handleMouseDown}
     >
       {/* Markers */}
       {markers.map((m, i) => (
         <div
           key={i}
           onClick={() => scrollToElement(m.element)}
-          className="absolute left-1 right-1 rounded-sm"
+          className="absolute left-1 right-1 rounded-sm cursor-pointer hover:opacity-100"
           style={{
             top: `${m.ratio * 100}%`,
             height: '3px',
@@ -149,7 +203,9 @@ const UnifiedScrollBar = ({ leftContainerId, rightContainerId }) => {
  
       {/* Viewport indicator */}
       <div
-        className="absolute left-0 right-0 border-2 border-blue-500 bg-blue-400/20 rounded-sm pointer-events-none"
+        className={`absolute left-0 right-0 border-2 border-blue-500 bg-blue-400/20 rounded-sm pointer-events-none ${
+          isDragging ? 'bg-blue-500/30' : ''
+        }`}
         style={{
           top: `${viewport.top}%`,
           height: `${viewport.height}%`
