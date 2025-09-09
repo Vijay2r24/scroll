@@ -9,13 +9,13 @@ const DocumentPreview = ({ document, diffs, title, containerId }) => {
 
   // Handle scroll synchronization between containers
   useEffect(() => {
-    if (!containerRef.current || !containerId) return;
+    if (!containerRef.current || !containerId || diffs) return; // Disable sync when showing diffs
 
     const container = containerRef.current;
-    let isScrolling = false;
+    let isSyncing = false;
 
     const handleScroll = (e) => {
-      if (isScrolling) return;
+      if (isSyncing) return;
       
       const sourceContainer = e.target;
       const sourceId = sourceContainer.id;
@@ -27,30 +27,32 @@ const DocumentPreview = ({ document, diffs, title, containerId }) => {
       const targetContainer = window.document.getElementById(targetId);
       
       if (targetContainer && targetContainer !== sourceContainer) {
+        // Prevent infinite loop
+        isSyncing = true;
+        
         // Calculate scroll ratio
         const sourceMaxScroll = Math.max(1, sourceContainer.scrollHeight - sourceContainer.clientHeight);
         const targetMaxScroll = Math.max(1, targetContainer.scrollHeight - targetContainer.clientHeight);
         
-        const scrollRatio = sourceContainer.scrollTop / sourceMaxScroll;
-        const targetScrollTop = Math.round(targetMaxScroll * scrollRatio);
+        if (sourceMaxScroll > 0 && targetMaxScroll > 0) {
+          const scrollRatio = sourceContainer.scrollTop / sourceMaxScroll;
+          const targetScrollTop = Math.round(targetMaxScroll * scrollRatio);
+          targetContainer.scrollTop = targetScrollTop;
+        }
         
-        // Prevent infinite loop
-        isScrolling = true;
-        targetContainer.scrollTop = targetScrollTop;
-        
-        // Reset flag after a short delay
-        setTimeout(() => {
-          isScrolling = false;
-        }, 50);
+        // Reset flag immediately
+        requestAnimationFrame(() => {
+          isSyncing = false;
+        });
       }
     };
 
-    container.addEventListener('scroll', handleScroll, { passive: true });
+    container.addEventListener('scroll', handleScroll, { passive: false });
 
     return () => {
       container.removeEventListener('scroll', handleScroll);
     };
-  }, [containerId]);
+  }, [containerId, diffs]);
 
   // Auto-scale content to fit container width while preserving proportions
   useEffect(() => {

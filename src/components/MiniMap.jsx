@@ -28,23 +28,40 @@ const UnifiedScrollBar = ({ leftContainerId, rightContainerId }) => {
     const { left, right } = getContainers();
     if (!left || !right) return;
 
+    // Temporarily disable scroll event listeners to prevent conflicts
+    const leftScrollHandler = left.onscroll;
+    const rightScrollHandler = right.onscroll;
+    left.onscroll = null;
+    right.onscroll = null;
+
     const leftMaxScroll = Math.max(1, left.scrollHeight - left.clientHeight);
     const rightMaxScroll = Math.max(1, right.scrollHeight - right.clientHeight);
 
-    const leftScrollTop = Math.round(leftMaxScroll * ratio);
-    const rightScrollTop = Math.round(rightMaxScroll * ratio);
+    if (leftMaxScroll > 0 && rightMaxScroll > 0) {
+      const leftScrollTop = Math.round(leftMaxScroll * ratio);
+      const rightScrollTop = Math.round(rightMaxScroll * ratio);
 
-    left.scrollTop = leftScrollTop;
-    right.scrollTop = rightScrollTop;
+      left.scrollTop = leftScrollTop;
+      right.scrollTop = rightScrollTop;
+    }
+
+    // Re-enable scroll handlers after a brief delay
+    requestAnimationFrame(() => {
+      left.onscroll = leftScrollHandler;
+      right.onscroll = rightScrollHandler;
+    });
   }, [getContainers]);
 
   /** Handle click on scroll bar */
   const handleBarClick = useCallback((e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
     if (!barRef.current) return;
     
     const rect = barRef.current.getBoundingClientRect();
     const clickY = e.clientY - rect.top;
-    const ratio = Math.max(0, Math.min(1, clickY / rect.height));
+    const ratio = Math.max(0, Math.min(1, clickY / Math.max(1, rect.height)));
     
     scrollBothToRatio(ratio);
   }, [scrollBothToRatio]);
@@ -52,14 +69,16 @@ const UnifiedScrollBar = ({ leftContainerId, rightContainerId }) => {
   /** Handle drag on scroll bar */
   const handleMouseDown = useCallback((e) => {
     e.preventDefault();
+    e.stopPropagation();
     setIsDragging(true);
     
     const handleMouseMove = (e) => {
+      e.preventDefault();
       if (!barRef.current) return;
       
       const rect = barRef.current.getBoundingClientRect();
       const dragY = e.clientY - rect.top;
-      const ratio = Math.max(0, Math.min(1, dragY / rect.height));
+      const ratio = Math.max(0, Math.min(1, dragY / Math.max(1, rect.height)));
       
       scrollBothToRatio(ratio);
     };
@@ -70,8 +89,8 @@ const UnifiedScrollBar = ({ leftContainerId, rightContainerId }) => {
       document.removeEventListener('mouseup', handleMouseUp);
     };
     
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseUp);
+    document.addEventListener('mousemove', handleMouseMove, { passive: false });
+    document.addEventListener('mouseup', handleMouseUp, { passive: false });
   }, [scrollBothToRatio]);
  
   /** Collect all change markers */
