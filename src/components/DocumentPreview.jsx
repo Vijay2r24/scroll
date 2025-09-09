@@ -24,7 +24,7 @@ const DocumentPreview = ({ document, diffs, title, containerId }) => {
       const targetId = sourceId.includes('left') 
         ? sourceId.replace('left', 'right') 
         : sourceId.replace('right', 'left');
-      const targetContainer = document.getElementById(targetId);
+      const targetContainer = window.document.getElementById(targetId);
       
       if (targetContainer && targetContainer !== sourceContainer) {
         // Calculate scroll ratio
