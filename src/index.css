@@ -521,11 +521,13 @@
   border-radius: 4px;
 }
 /* Hide scrollbars in document preview containers */
+.word-document-preview::-webkit-scrollbar,
 #left-preview-container::-webkit-scrollbar,
 #right-preview-container::-webkit-scrollbar {
   display: none;
 }
 
+.word-document-preview,
 #left-preview-container,
 #right-preview-container {
   scrollbar-width: none; /* Firefox */
