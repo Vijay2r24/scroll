@@ -520,3 +520,14 @@
   opacity: 0.8;
   border-radius: 4px;
 }
+/* Hide scrollbars in document preview containers */
+#left-preview-container::-webkit-scrollbar,
+#right-preview-container::-webkit-scrollbar {
+  display: none;
+}
+
+#left-preview-container,
+#right-preview-container {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}

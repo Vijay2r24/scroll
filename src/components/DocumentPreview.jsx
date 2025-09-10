@@ -128,7 +128,11 @@ const DocumentPreview = ({ document, diffs, title, containerId }) => {
         className="flex-1 overflow-auto bg-white" 
         id={containerId} 
         ref={containerRef}
-        style={{ scrollBehavior: 'smooth' }}
+        style={{ 
+          scrollBehavior: 'smooth',
+          scrollbarWidth: 'none', /* Firefox */
+          msOverflowStyle: 'none' /* IE and Edge */
+        }}
       >
         <div className="p-4">
           <div 
